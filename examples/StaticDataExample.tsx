@@ -1,5 +1,9 @@
 import React from "react";
-import { NcTable, type Column, type TableAction } from "nc-table";
+import {
+  NcTable,
+  type Column,
+  type TableAction,
+} from "../src/components/nc-table";
 import i18n from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 
