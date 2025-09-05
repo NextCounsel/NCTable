@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NC-Table Filter Demo</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f8fafc;
+      }
+      .demo-container {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .filter-demo {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+      .filter-input {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin: 8px 0;
+      }
+      select,
+      input {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        background: #2563eb;
+      }
+      .result {
+        background: #dcfce7;
+        border: 1px solid #16a34a;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+      .payload {
+        background: #1f2937;
+        color: #f9fafb;
+        padding: 16px;
+        border-radius: 6px;
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+      }
+      .success {
+        color: #16a34a;
+        font-weight: bold;
+      }
+      .test-results {
+        background: #eff6ff;
+        border: 1px solid #3b82f6;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+      .test-case {
+        margin: 8px 0;
+        padding: 8px;
+        background: white;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="demo-container">
+      <h1>🎯 NC-Table Filter String Demo</h1>
+      <p>
+        This demonstrates the exact filter format your backend expects:
+        <code>${column}${operator}${value};And$...</code>
+      </p>
+
+      <div class="filter-demo">
+        <h3>Interactive Filter Builder</h3>
+        <div id="filterInputs">
+          <div class="filter-input">
+            <select id="column1">
+              <option value="name">Name</option>
+              <option value="department">Department</option>
+              <option value="startDate">Start Date</option>
+              <option value="isActive">Is Active</option>
+              <option value="salary">Salary</option>
+            </select>
+            <select id="operator1">
+              <option value="~=">Contains (~=)</option>
+              <option value="==">=Equals (==)</option>
+              <option value="!=">Not Equals (!=)</option>
+              <option value=">">Greater Than (>)</option>
+              <option value=">=">Greater Than or Equal (>=)</option>
+              <option value="<">Less Than (<)</option>
+              <option value="<=">Less Than or Equal (<=)</option>
+            </select>
+            <input
+              type="text"
+              id="value1"
+              placeholder="Enter value"
+              value="John"
+            />
+            <button onclick="addCondition()">+ Add Condition</button>
+          </div>
+        </div>
+        <button onclick="generateFilter()">🎯 Generate Filter String</button>
+        <button onclick="clearAll()">Clear All</button>
+      </div>
+
+      <div id="results" style="display: none">
+        <div class="result">
+          <h3>✅ Generated Filter String:</h3>
+          <div
+            id="filterString"
+            style="
+              font-family: monospace;
+              font-size: 16px;
+              font-weight: bold;
+              color: #059669;
+            "
+          ></div>
+        </div>
+
+        <div class="result">
+          <h3>📤 Backend Payload:</h3>
+          <div id="backendPayload" class="payload"></div>
+        </div>
+      </div>
+
+      <div class="test-results">
+        <h3>🧪 Test Results from Our Implementation</h3>
+        <div id="testResults"></div>
+      </div>
+    </div>
+
+    <script>
+      // Filter string builder function (same as our implementation)
+      function buildFilterString(filters) {
+        if (!filters || filters.length === 0) {
+          return "";
+        }
+
+        const filterParts = filters
+          .filter((filter) => {
+            const value = filter.value;
+            return (
+              value !== null &&
+              value !== undefined &&
+              String(value).trim() !== ""
+            );
+          })
+          .map((filter) => {
+            const { column, operator, value } = filter;
+            let sanitizedValue = String(value);
+            sanitizedValue = sanitizedValue
+              .replace(/;/g, "")
+              .replace(/And\$/g, "")
+              .trim();
+            return `${column}${operator}${sanitizedValue}`;
+          });
+
+        if (filterParts.length === 0) {
+          return "";
+        }
+
+        if (filterParts.length === 1) {
+          return `${filterParts[0]};`;
+        }
+
+        return filterParts.join(";And$") + ";";
+      }
+
+      let conditionCount = 1;
+
+      function addCondition() {
+        conditionCount++;
+        const container = document.getElementById("filterInputs");
+        const newCondition = document.createElement("div");
+        newCondition.className = "filter-input";
+        newCondition.innerHTML = `
+                <select id="column${conditionCount}">
+                    <option value="name">Name</option>
+                    <option value="department">Department</option>
+                    <option value="startDate">Start Date</option>
+                    <option value="isActive">Is Active</option>
+                    <option value="salary">Salary</option>
+                </select>
+                <select id="operator${conditionCount}">
+                    <option value="~=">Contains (~=)</option>
+                    <option value="==">Equals (==)</option>
+                    <option value="!=">Not Equals (!=)</option>
+                    <option value=">">Greater Than (>)</option>
+                    <option value=">=">Greater Than or Equal (>=)</option>
+                    <option value="<">Less Than (<)</option>
+                    <option value="<=">Less Than or Equal (<=)</option>
+                </select>
+                <input type="text" id="value${conditionCount}" placeholder="Enter value">
+                <button onclick="removeCondition(this)">Remove</button>
+            `;
+        container.appendChild(newCondition);
+      }
+
+      function removeCondition(button) {
+        button.parentElement.remove();
+      }
+
+      function clearAll() {
+        document.getElementById("filterInputs").innerHTML = `
+                <div class="filter-input">
+                    <select id="column1">
+                        <option value="name">Name</option>
+                        <option value="department">Department</option>
+                        <option value="startDate">Start Date</option>
+                        <option value="isActive">Is Active</option>
+                        <option value="salary">Salary</option>
+                    </select>
+                    <select id="operator1">
+                        <option value="~=">Contains (~=)</option>
+                        <option value="==">Equals (==)</option>
+                        <option value="!=">Not Equals (!=)</option>
+                        <option value=">">Greater Than (>)</option>
+                        <option value=">=">Greater Than or Equal (>=)</option>
+                        <option value="<">Less Than (<)</option>
+                        <option value="<=">Less Than or Equal (<=)</option>
+                    </select>
+                    <input type="text" id="value1" placeholder="Enter value" value="John">
+                    <button onclick="addCondition()">+ Add Condition</button>
+                </div>
+            `;
+        conditionCount = 1;
+        document.getElementById("results").style.display = "none";
+      }
+
+      function generateFilter() {
+        const filters = [];
+        const inputs = document.querySelectorAll(".filter-input");
+
+        inputs.forEach((input, index) => {
+          const column = input.querySelector("select").value;
+          const operator = input.querySelectorAll("select")[1].value;
+          const value = input.querySelector("input").value;
+
+          if (value.trim()) {
+            filters.push({
+              id: index + 1,
+              column: column,
+              operator: operator,
+              value: value,
+            });
+          }
+        });
+
+        const filterString = buildFilterString(filters);
+
+        // Show results
+        document.getElementById("results").style.display = "block";
+        document.getElementById("filterString").textContent =
+          filterString || "(empty - no valid filters)";
+
+        // Generate backend payload
+        const payload = {
+          PageNumber: 1,
+          PageSize: 10,
+          Order: "name;Asc",
+        };
+
+        if (filterString && filterString.trim() !== "") {
+          payload.Filter = filterString;
+        }
+
+        document.getElementById("backendPayload").textContent = JSON.stringify(
+          payload,
+          null,
+          2
+        );
+      }
+
+      // Run test cases and display results
+      function runTests() {
+        const testCases = [
+          {
+            name: "Single Filter",
+            input: [{ id: 1, column: "name", operator: "~=", value: "John" }],
+            expected: "name~=John;",
+          },
+          {
+            name: "Multiple Filters",
+            input: [
+              { id: 1, column: "name", operator: "~=", value: "John" },
+              {
+                id: 2,
+                column: "department",
+                operator: "==",
+                value: "Engineering",
+              },
+              { id: 3, column: "salary", operator: ">", value: "50000" },
+            ],
+            expected:
+              "name~=John;And$department==Engineering;And$salary>50000;",
+          },
+          {
+            name: "Empty Filters",
+            input: [],
+            expected: "",
+          },
+          {
+            name: "Filters with Empty Values",
+            input: [
+              { id: 1, column: "name", operator: "~=", value: "John" },
+              { id: 2, column: "department", operator: "==", value: "" },
+              { id: 3, column: "salary", operator: ">", value: "50000" },
+            ],
+            expected: "name~=John;And$salary>50000;",
+          },
+        ];
+
+        let resultsHTML = "";
+        testCases.forEach((test) => {
+          const result = buildFilterString(test.input);
+          const passed = result === test.expected;
+          resultsHTML += `
+                    <div class="test-case">
+                        <strong>${test.name}:</strong> 
+                        <span class="${passed ? "success" : "error"}">${
+            passed ? "✅ PASSED" : "❌ FAILED"
+          }</span><br>
+                        <small>Result: <code>${
+                          result || "(empty)"
+                        }</code></small><br>
+                        <small>Expected: <code>${
+                          test.expected || "(empty)"
+                        }</code></small>
+                    </div>
+                `;
+        });
+
+        document.getElementById("testResults").innerHTML = resultsHTML;
+      }
+
+      // Initialize with some example values
+      window.onload = function () {
+        runTests();
+
+        // Pre-fill some example filters
+        setTimeout(() => {
+          addCondition();
+          document.getElementById("column2").value = "department";
+          document.getElementById("operator2").value = "==";
+          document.getElementById("value2").value = "Engineering";
+
+          addCondition();
+          document.getElementById("column3").value = "salary";
+          document.getElementById("operator3").value = ">";
+          document.getElementById("value3").value = "50000";
+        }, 100);
+      };
+    </script>
+  </body>
+</html>
