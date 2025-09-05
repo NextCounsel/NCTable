@@ -21,7 +21,7 @@ A production-ready, feature-rich table component that supports both static and s
 ## 📦 Installation
 
 ```bash
-npm install nc-table
+npm install @bitflake/nc-table
 npm install react-i18next i18next lucide-react
 ```
 
@@ -34,7 +34,7 @@ npm install react-i18next i18next lucide-react
 
 ```tsx
 import React from "react";
-import { NcTable, type Column, type TableAction } from "nc-table";
+import { NcTable, type Column, type TableAction } from "@bitflake/nc-table";
 import i18n from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 
@@ -222,7 +222,7 @@ The component provides 12 powerful comparison operators:
 
 ```tsx
 import React, { useState } from "react";
-import { NcTable, type Column, type TableAction } from "nc-table";
+import { NcTable, type Column, type TableAction } from "@bitflake/nc-table";
 
 type Employee = {
   id: number;
@@ -547,6 +547,6 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 ## 🔗 Repository
 
 - **GitHub**: [NextCounsel/NCTable](https://github.com/NextCounsel/NCTable)
-- **npm**: [nc-table](https://www.npmjs.com/package/nc-table)
+- **npm**: [@bitflake/nc-table](https://www.npmjs.com/package/@bitflake/nc-table)
 
 **Built with ❤️ for modern React applications**
