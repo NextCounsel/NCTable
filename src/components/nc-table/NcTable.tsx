@@ -121,9 +121,16 @@ const NcTableCore = <T extends Record<string, unknown>>({
   const { t } = useTranslation();
   const { toast } = useToast();
 
-  // Use external or internal settings
-  const effectiveSettings = externalSettings || internalSettings;
+  // Use external or internal settings - memoized to prevent useEffect triggers
+  const effectiveSettings = useMemo(() => {
+    return externalSettings || internalSettings;
+  }, [externalSettings, internalSettings]);
   const shouldUseInternalSettings = enableInternalSettings && !externalSettings;
+
+  // Extract stable values for useEffect dependencies to prevent infinite loops
+  const currentPageSize = useMemo(() => effectiveSettings.pageSize, [effectiveSettings.pageSize]);
+  const currentSortBy = useMemo(() => effectiveSettings.sortBy, [effectiveSettings.sortBy]);
+  const currentSortDirection = useMemo(() => effectiveSettings.sortDirection, [effectiveSettings.sortDirection]);
 
   // Fetch data using the handler
   const fetchData = useCallback(
@@ -146,12 +153,11 @@ const NcTableCore = <T extends Record<string, unknown>>({
 
         const params: PaginationData = {
           PageNumber: overrideParams?.page ?? currentPage,
-          PageSize: overrideParams?.size ?? effectiveSettings.pageSize,
+          PageSize: overrideParams?.size ?? currentPageSize,
           Order:
-            overrideParams?.sortBy ?? effectiveSettings.sortBy
-              ? `${overrideParams?.sortBy ?? effectiveSettings.sortBy};${
-                  overrideParams?.sortDirection ??
-                  effectiveSettings.sortDirection
+            overrideParams?.sortBy ?? currentSortBy
+              ? `${overrideParams?.sortBy ?? currentSortBy};${
+                  overrideParams?.sortDirection ?? currentSortDirection
                 }`
               : undefined,
         };
@@ -193,12 +199,13 @@ const NcTableCore = <T extends Record<string, unknown>>({
     [
       handler,
       currentPage,
-      effectiveSettings.pageSize,
-      effectiveSettings.sortBy,
-      effectiveSettings.sortDirection,
+      currentPageSize,
+      currentSortBy,
+      currentSortDirection,
       searchTerm,
       // isRequestInProgress removed - it's only used internally to prevent concurrent requests
       // toast removed - causes fetchData recreation, will handle error toast separately
+      // effectiveSettings.* replaced with stable extracted values to prevent recreation
     ]
   );
 
@@ -219,8 +226,47 @@ const NcTableCore = <T extends Record<string, unknown>>({
   // Fetch data when dependencies change (excluding advanced search scenarios)
   useEffect(() => {
     if (handler && !isAdvancedSearchActive) {
-      // Always fetch data when handler is available and dependencies change
-      fetchData();
+      // Prevent multiple simultaneous requests
+      if (isRequestInProgress) return;
+
+      setIsRequestInProgress(true);
+      setLoading(true);
+      setError(null);
+
+      const params: PaginationData = {
+        PageNumber: currentPage,
+        PageSize: currentPageSize,
+        Order: currentSortBy ? `${currentSortBy};${currentSortDirection}` : undefined,
+      };
+
+      // Only add Filter property if it has a value
+      if (searchTerm && searchTerm.trim() !== "") {
+        params.Filter = searchTerm;
+      }
+
+      handler(params)
+        .then((response) => {
+          if (response && response.Data) {
+            setData(response.Data);
+            setTotalItems(response.Count || 0);
+            setError(null);
+          } else {
+            setData([]);
+            setTotalItems(0);
+            setError("No data received from server");
+          }
+        })
+        .catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : "Failed to fetch data";
+          console.error("Error fetching table data:", error);
+          setData([]);
+          setTotalItems(0);
+          setError(errorMessage);
+        })
+        .finally(() => {
+          setLoading(false);
+          setIsRequestInProgress(false);
+        });
     } else if (staticData) {
       setData(staticData);
       setTotalItems(staticData.length);
@@ -229,12 +275,13 @@ const NcTableCore = <T extends Record<string, unknown>>({
     handler,
     staticData,
     currentPage,
-    effectiveSettings.pageSize,
-    effectiveSettings.sortBy,
-    effectiveSettings.sortDirection,
+    currentPageSize,
+    currentSortBy,
+    currentSortDirection,
     searchTerm,
     isAdvancedSearchActive,
-    // fetchData removed - would cause infinite loop since it's recreated when its deps change
+    isRequestInProgress,
+    // Direct implementation to avoid fetchData function recreation issues
   ]);
 
   // Internal search handler
@@ -274,10 +321,10 @@ const NcTableCore = <T extends Record<string, unknown>>({
       if (handler) {
         handler({
           PageNumber: 1,
-          PageSize: effectiveSettings.pageSize,
+          PageSize: currentPageSize,
           Filter: filterString || undefined,
-          Order: effectiveSettings.sortBy
-            ? `${effectiveSettings.sortBy};${effectiveSettings.sortDirection}`
+          Order: currentSortBy
+            ? `${currentSortBy};${currentSortDirection}`
             : undefined,
         })
           .then((response) => {
@@ -319,9 +366,9 @@ const NcTableCore = <T extends Record<string, unknown>>({
     [
       onAdvancedSearch,
       handler,
-      effectiveSettings.pageSize,
-      effectiveSettings.sortBy,
-      effectiveSettings.sortDirection,
+      currentPageSize,
+      currentSortBy,
+      currentSortDirection,
       columns,
       toast,
     ]
