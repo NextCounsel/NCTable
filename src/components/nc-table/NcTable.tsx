@@ -207,9 +207,12 @@ const NcTableCore = <T extends Record<string, unknown>>({
     ]
   );
 
-  // Fetch data when dependencies change
+  // Track if we're in the middle of an advanced search to prevent double fetching
+  const [isAdvancedSearchActive, setIsAdvancedSearchActive] = useState(false);
+
+  // Fetch data when dependencies change (excluding advanced search scenarios)
   useEffect(() => {
-    if (handler) {
+    if (handler && !isAdvancedSearchActive) {
       // Always fetch data when handler is available and dependencies change
       fetchData();
     } else if (staticData) {
@@ -224,6 +227,8 @@ const NcTableCore = <T extends Record<string, unknown>>({
     effectiveSettings.sortBy,
     effectiveSettings.sortDirection,
     searchTerm,
+    isAdvancedSearchActive,
+    fetchData,
   ]);
 
   // Internal search handler
@@ -250,6 +255,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
     (filters: SearchFilter[]) => {
       setSearchFilters(filters);
       setCurrentPage(1);
+      setIsAdvancedSearchActive(true); // Prevent useEffect from double-fetching
 
       if (onAdvancedSearch) {
         onAdvancedSearch(filters);
@@ -259,15 +265,56 @@ const NcTableCore = <T extends Record<string, unknown>>({
       const filterString = buildFilterString(filters, columns);
       setSearchTerm(filterString);
 
-      // Use fetchData with the properly formatted filter
+      // Call handler directly to avoid infinite loop
       if (handler) {
-        fetchData({
-          page: 1,
-          search: filterString || undefined,
-        });
+        handler({
+          PageNumber: 1,
+          PageSize: effectiveSettings.pageSize,
+          Filter: filterString || undefined,
+          Order: effectiveSettings.sortBy
+            ? `${effectiveSettings.sortBy};${effectiveSettings.sortDirection}`
+            : undefined,
+        })
+          .then((response) => {
+            if (response && response.Data) {
+              setData(response.Data);
+              setTotalItems(response.Count || 0);
+              setError(null);
+            } else {
+              setData([]);
+              setTotalItems(0);
+              setError("No data received from server");
+            }
+          })
+          .catch((error) => {
+            const errorMessage =
+              error instanceof Error ? error.message : "Failed to fetch data";
+            console.error("Error in advanced search:", error);
+            setData([]);
+            setTotalItems(0);
+            setError(errorMessage);
+            toast({
+              title: "Error",
+              description: errorMessage,
+              variant: "destructive",
+            });
+          })
+          .finally(() => {
+            setIsAdvancedSearchActive(false); // Re-enable normal useEffect fetching
+          });
+      } else {
+        setIsAdvancedSearchActive(false); // Re-enable if no handler
       }
     },
-    [onAdvancedSearch, handler, fetchData]
+    [
+      onAdvancedSearch,
+      handler,
+      effectiveSettings.pageSize,
+      effectiveSettings.sortBy,
+      effectiveSettings.sortDirection,
+      columns,
+      toast,
+    ]
   );
 
   // Delete handlers
