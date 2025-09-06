@@ -9,6 +9,7 @@ A production-ready, feature-rich table component that supports both static and s
 - ✅ **Static & Server-side Data** - Works with local arrays or async data handlers
 - ✅ **Advanced Search** - 5 data types with 12 comparison operators
 - ✅ **Structured Filter Format** - Backend-friendly `${column}${operator}${value};And$...` format
+- ✅ **Backend Field Mapping** - Map display column names to different backend field names
 - ✅ **Row Selection** - Single and multi-row selection with bulk actions
 - ✅ **Sorting & Pagination** - Built-in sorting and configurable pagination
 - ✅ **CRUD Operations** - Built-in delete functionality with confirmation dialogs
@@ -217,6 +218,68 @@ The component provides 12 powerful comparison operators:
 - **Not Starts With** (`!_=`) - Does not begin with pattern
 - **Ends With** (`|=`) - Ends with pattern
 - **Not Ends With** (`!|=`) - Does not end with pattern
+
+### 🔑 Backend Field Mapping (`searchOverride.key`)
+
+When your display column names differ from backend field names, use the `key` property in `searchOverride`:
+
+```tsx
+const columns: Column<Employee>[] = [
+  {
+    key: "statusDescription",        // Display field: "Active Employee"
+    header: "Status Description",
+    searchable: true,
+    searchOverride: {
+      key: "Status",                 // 🎯 Backend field: sends "Status==1;"
+      dataType: "select",
+      selectOptions: [
+        { text: "Active Employee", value: "1" },
+        { text: "Inactive Employee", value: "0" },
+        { text: "Pending Approval", value: "2" },
+      ]
+    }
+  },
+  {
+    key: "departmentName",           // Display field: "Engineering Dept"
+    header: "Department Name", 
+    searchable: true,
+    searchOverride: {
+      key: "DeptId",                 // 🎯 Backend field: sends "DeptId==ENG;"
+      dataType: "select",
+      selectOptions: [
+        { text: "Engineering Dept", value: "ENG" },
+        { text: "Marketing Dept", value: "MKT" },
+      ]
+    }
+  },
+  {
+    key: "name",                     // Same for display and backend
+    header: "Name",
+    searchable: true,
+    // No key override - uses "name" for both display and backend
+  }
+];
+```
+
+#### Generated Filter Examples
+
+```javascript
+// User searches: "Status Description" = "Active Employee"
+// Generated: "Status==1;"
+
+// User searches: "Department Name" = "Engineering Dept" AND "Status Description" = "Active Employee"  
+// Generated: "DeptId==ENG;And$Status==1;"
+
+// User searches: "Name" contains "John"
+// Generated: "name~=John;"
+```
+
+#### Use Cases
+
+- **Database Fields**: Display `firstName` but search on `first_name`
+- **Enum Values**: Display "Active Employee" but search on numeric status codes
+- **Normalized IDs**: Display department names but search on department IDs
+- **Legacy APIs**: Map modern UI field names to legacy backend fields
 
 ## 🎛️ Complete Feature Example
 
@@ -477,6 +540,7 @@ interface IApiResponse<T> {
 type NcTableSearchDataType = "text" | "date" | "select" | "boolean" | "YesOrNo";
 
 interface NcTableSearchOverride {
+  key?: string; // Backend field name to use instead of column name
   dataType: NcTableSearchDataType;
   selectOptions?: Array<{ text: string; value: unknown }>;
 }

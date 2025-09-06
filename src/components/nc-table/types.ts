@@ -50,6 +50,7 @@ export interface NcTableSearchOption<T = unknown> {
 }
 
 export interface NcTableSearchOverride {
+  key?: string; // Backend field name to use instead of column name
   dataType: NcTableSearchDataType;
   selectOptions?: NcTableSearchOption[];
 }

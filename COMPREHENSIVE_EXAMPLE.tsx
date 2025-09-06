@@ -291,14 +291,15 @@ const columns: Column<Employee>[] = [
     width: "150px",
     searchable: true,
     searchOverride: {
+      key: "DeptId", // 🎯 Backend uses department IDs, not names
       dataType: "select",
       selectOptions: [
-        { text: "Engineering", value: "Engineering" },
-        { text: "Marketing", value: "Marketing" },
-        { text: "Sales", value: "Sales" },
+        { text: "Engineering", value: "ENG" },
+        { text: "Marketing", value: "MKT" },
+        { text: "Sales", value: "SALES" },
         { text: "HR", value: "HR" },
-        { text: "Finance", value: "Finance" },
-        { text: "Operations", value: "Operations" },
+        { text: "Finance", value: "FIN" },
+        { text: "Operations", value: "OPS" },
       ],
     },
     render: (emp) => (

@@ -111,9 +111,10 @@ const NcTable = <T extends Record<string, unknown>>({
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // Bulk delete confirmation state
-  const [showBulkDeleteConfirmation, setShowBulkDeleteConfirmation] = useState(false);
+  const [showBulkDeleteConfirmation, setShowBulkDeleteConfirmation] =
+    useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const { t } = useTranslation();
@@ -148,7 +149,8 @@ const NcTable = <T extends Record<string, unknown>>({
           Order:
             overrideParams?.sortBy ?? effectiveSettings.sortBy
               ? `${overrideParams?.sortBy ?? effectiveSettings.sortBy};${
-                  overrideParams?.sortDirection ?? effectiveSettings.sortDirection
+                  overrideParams?.sortDirection ??
+                  effectiveSettings.sortDirection
                 }`
               : undefined,
         };
@@ -253,7 +255,7 @@ const NcTable = <T extends Record<string, unknown>>({
       }
 
       // 🎯 NEW: Build structured filter string for backend
-      const filterString = buildFilterString(filters);
+      const filterString = buildFilterString(filters, columns);
       setSearchTerm(filterString);
 
       // Use fetchData with the properly formatted filter
@@ -336,7 +338,7 @@ const NcTable = <T extends Record<string, unknown>>({
     setItemToDelete(null);
   }, []);
 
-    // Bulk delete handler
+  // Bulk delete handler
   const handleBulkDelete = useCallback(async () => {
     if (!removeItemHandler || selectedItems.size === 0) return;
 
@@ -381,7 +383,7 @@ const NcTable = <T extends Record<string, unknown>>({
           title: "Success",
           description: `${selectedIds.length} item${
             selectedIds.length > 1 ? "s" : ""
-            } deleted successfully.`,
+          } deleted successfully.`,
         });
 
         // Clear selection
@@ -978,7 +980,8 @@ const NcTable = <T extends Record<string, unknown>>({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Bulk Delete</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedItems.size} selected item{selectedItems.size > 1 ? 's' : ''}? This action cannot be undone.
+              Are you sure you want to delete {selectedItems.size} selected item
+              {selectedItems.size > 1 ? "s" : ""}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

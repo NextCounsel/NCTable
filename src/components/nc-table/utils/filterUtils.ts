@@ -1,11 +1,18 @@
 import { SearchFilter } from "../components";
+import { Column } from "../types";
 
 /**
  * Builds a filter string in the format required by the backend:
  * - Single condition: `${column}${operator}${value};`
  * - Multiple conditions: `${column}${operator}${value};And$${column}${operator}${value};`
+ *
+ * @param filters - Array of search filters
+ * @param columns - Array of column definitions (used to resolve searchOverride.key)
  */
-export const buildFilterString = (filters: SearchFilter[]): string => {
+export const buildFilterString = (
+  filters: SearchFilter[],
+  columns?: Column<any>[]
+): string => {
   if (!filters || filters.length === 0) {
     return "";
   }
@@ -21,6 +28,15 @@ export const buildFilterString = (filters: SearchFilter[]): string => {
     .map((filter) => {
       const { column, operator, value } = filter;
 
+      // Resolve the actual field name to use for backend query
+      let fieldName = column;
+      if (columns) {
+        const columnDef = columns.find((col) => col.key === column);
+        if (columnDef?.searchOverride?.key) {
+          fieldName = columnDef.searchOverride.key;
+        }
+      }
+
       // Sanitize value to prevent breaking the format
       let sanitizedValue = String(value);
 
@@ -30,7 +46,7 @@ export const buildFilterString = (filters: SearchFilter[]): string => {
         .replace(/And\$/g, "") // Remove And$ sequences
         .trim();
 
-      return `${column}${operator}${sanitizedValue}`;
+      return `${fieldName}${operator}${sanitizedValue}`;
     });
 
   if (filterParts.length === 0) {
