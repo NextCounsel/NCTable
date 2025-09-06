@@ -14,7 +14,7 @@
  * ✅ TypeScript Support
  *
  * 🔗 GitHub: https://github.com/NextCounsel/NCTable.git
- * 📦 npm: npm install @bitflake/nc-table
+ * 📦 npm: npm install nc-table
  */
 
 import React, { useState, useCallback, useEffect } from "react";
@@ -998,7 +998,7 @@ export default function ComprehensiveExample() {
                   </h3>
                   <button
                     onClick={() =>
-                      navigator.clipboard?.writeText("npm install @bitflake/nc-table")
+                      navigator.clipboard?.writeText("npm install nc-table")
                     }
                     className="text-gray-400 hover:text-white transition-colors text-sm"
                   >
@@ -1006,7 +1006,7 @@ export default function ComprehensiveExample() {
                   </button>
                 </div>
                 <code className="text-green-400 text-lg font-mono">
-                  npm install @bitflake/nc-table
+                  npm install nc-table
                 </code>
                 <div className="text-gray-400 text-sm mt-2">
                   Also install: react-i18next i18next lucide-react

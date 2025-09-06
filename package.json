@@ -1,5 +1,5 @@
 {
-  "name": "@bitflake/nc-table",
+  "name": "nc-table",
   "version": "0.1.0",
   "private": false,
   "type": "module",
