@@ -263,7 +263,6 @@ const NcTableCore = <T extends Record<string, unknown>>({
 
       // 🎯 NEW: Build structured filter string for backend
       const filterString = buildFilterString(filters, columns);
-      setSearchTerm(filterString);
 
       // Call handler directly to avoid infinite loop
       if (handler) {
@@ -280,10 +279,13 @@ const NcTableCore = <T extends Record<string, unknown>>({
               setData(response.Data);
               setTotalItems(response.Count || 0);
               setError(null);
+              // ✅ Set searchTerm AFTER successful response to avoid triggering useEffect
+              setSearchTerm(filterString);
             } else {
               setData([]);
               setTotalItems(0);
               setError("No data received from server");
+              setSearchTerm(filterString); // Set even on empty response
             }
           })
           .catch((error) => {
@@ -293,6 +295,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
             setData([]);
             setTotalItems(0);
             setError(errorMessage);
+            setSearchTerm(filterString); // Set even on error to maintain filter state
             toast({
               title: "Error",
               description: errorMessage,
@@ -304,6 +307,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
           });
       } else {
         setIsAdvancedSearchActive(false); // Re-enable if no handler
+        setSearchTerm(filterString); // Set for static data mode
       }
     },
     [
