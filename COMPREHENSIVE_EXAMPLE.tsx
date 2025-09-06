@@ -648,61 +648,144 @@ export default function ComprehensiveExample() {
 
     setLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Simulate API call delay
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-    let filteredData = [...mockEmployees];
+      let filteredData = [...mockEmployees];
 
-    // Apply filter if provided
-    if (params.Filter) {
-      console.log("🔍 Applying filter:", params.Filter);
-      // In real implementation, this would be handled by your backend
-      // For demo, we'll do basic filtering
-      const filterTerms = params.Filter.split(";And$").map((f: string) =>
-        f.replace(/;$/, "")
-      );
+      // Apply filter if provided
+      if (params.Filter) {
+        console.log("🔍 Applying filter:", params.Filter);
 
-      filteredData = filteredData.filter((emp) => {
-        return filterTerms.some((term: string) => {
-          const [, operator, value] =
-            term.match(/^(.+?)(==|!=|>|>=|<|<=|~=|!~=|_=|!_=|\|=|!\|=)(.+)$/) ||
-            [];
-          if (!operator || !value) return false;
+        // Parse the new filter format with key mappings
+        const filterTerms = params.Filter.split(";And$")
+          .map((f: string) => f.replace(/;$/, ""))
+          .filter((term) => term.trim() !== "");
 
-          // Simple demo filtering - in real app this would be server-side
-          const empValues = Object.values(emp).join(" ").toLowerCase();
-          return empValues.includes(value.toLowerCase());
+        filteredData = filteredData.filter((emp) => {
+          return filterTerms.every((term: string) => {
+            const match = term.match(
+              /^(.+?)(==|!=|>|>=|<|<=|~=|!~=|_=|!_=|\|=|!\|=)(.+)$/
+            );
+            if (!match) return true;
+
+            const [, fieldName, operator, value] = match;
+
+            // Handle key mappings for demo (in real backend, this mapping would be done server-side)
+            let actualField = fieldName;
+            let searchValue = value;
+
+            // Map backend field names to actual data fields for demo
+            switch (fieldName) {
+              case "Status":
+                actualField = "status";
+                // Map numeric status values to actual status values for demo
+                searchValue =
+                  value === "1"
+                    ? "active"
+                    : value === "0"
+                    ? "inactive"
+                    : value === "2"
+                    ? "pending"
+                    : value;
+                break;
+              case "DeptId":
+                actualField = "department";
+                // Map department IDs to actual department names for demo
+                const deptMap: any = {
+                  ENG: "Engineering",
+                  MKT: "Marketing",
+                  SALES: "Sales",
+                  HR: "HR",
+                  FIN: "Finance",
+                  OPS: "Operations",
+                };
+                searchValue = deptMap[value] || value;
+                break;
+              case "IsActive":
+                actualField = "isActive";
+                searchValue = value === "true" ? "true" : "false";
+                break;
+              default:
+                actualField = fieldName;
+                break;
+            }
+
+            const empValue = String(
+              (emp as any)[actualField] || ""
+            ).toLowerCase();
+            const searchVal = searchValue.toLowerCase();
+
+            // Apply operator logic
+            switch (operator) {
+              case "==":
+                return empValue === searchVal;
+              case "!=":
+                return empValue !== searchVal;
+              case "~=":
+                return empValue.includes(searchVal);
+              case "!~=":
+                return !empValue.includes(searchVal);
+              case "_=":
+                return empValue.startsWith(searchVal);
+              case "!_=":
+                return !empValue.startsWith(searchVal);
+              case "|=":
+                return empValue.endsWith(searchVal);
+              case "!|=":
+                return !empValue.endsWith(searchVal);
+              case ">":
+                return Number(empValue) > Number(searchVal);
+              case ">=":
+                return Number(empValue) >= Number(searchVal);
+              case "<":
+                return Number(empValue) < Number(searchVal);
+              case "<=":
+                return Number(empValue) <= Number(searchVal);
+              default:
+                return empValue.includes(searchVal);
+            }
+          });
         });
-      });
+      }
+
+      // Apply sorting if provided
+      if (params.Order) {
+        const [sortField, sortDirection] = params.Order.split(";");
+        filteredData.sort((a: any, b: any) => {
+          const aVal = a[sortField];
+          const bVal = b[sortField];
+          const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+          return sortDirection === "Desc" ? -result : result;
+        });
+      }
+
+      // Apply pagination
+      const startIndex = (params.PageNumber - 1) * params.PageSize;
+      const endIndex = startIndex + params.PageSize;
+      const paginatedData = filteredData.slice(startIndex, endIndex);
+
+      setLoading(false);
+
+      return {
+        Succeeded: true,
+        Data: paginatedData,
+        Count: filteredData.length,
+        Message: "Data retrieved successfully",
+      };
+    } catch (error) {
+      console.error("❌ Server handler error:", error);
+      setLoading(false);
+
+      return {
+        Succeeded: false,
+        Data: [],
+        Count: 0,
+        Message:
+          error instanceof Error ? error.message : "Server error occurred",
+      };
     }
-
-    // Apply sorting if provided
-    if (params.Order) {
-      const [sortField, sortDirection] = params.Order.split(";");
-      filteredData.sort((a: any, b: any) => {
-        const aVal = a[sortField];
-        const bVal = b[sortField];
-        const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-        return sortDirection === "Desc" ? -result : result;
-      });
-    }
-
-    // Apply pagination
-    const startIndex = (params.PageNumber - 1) * params.PageSize;
-    const endIndex = startIndex + params.PageSize;
-    const paginatedData = filteredData.slice(startIndex, endIndex);
-
-    setLoading(false);
-
-    return {
-      Succeeded: true,
-      Data: paginatedData,
-      Count: filteredData.length,
-      Message: "Data retrieved successfully",
-      PageNumber: params.PageNumber,
-      PageSize: params.PageSize,
-      TotalPages: Math.ceil(filteredData.length / params.PageSize),
-    };
   }, []);
 
   // Advanced search handler
@@ -999,7 +1082,9 @@ export default function ComprehensiveExample() {
                   </h3>
                   <button
                     onClick={() =>
-                      navigator.clipboard?.writeText("npm install nc-table-react")
+                      navigator.clipboard?.writeText(
+                        "npm install nc-table-react"
+                      )
                     }
                     className="text-gray-400 hover:text-white transition-colors text-sm"
                   >

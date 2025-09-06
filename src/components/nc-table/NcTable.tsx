@@ -39,8 +39,9 @@ import {
 } from "./components";
 import Icon from "./utils/iconMap";
 import { buildFilterString } from "./utils/filterUtils";
+import { ErrorBoundary } from "./ErrorBoundary";
 
-const NcTable = <T extends Record<string, unknown>>({
+const NcTableCore = <T extends Record<string, unknown>>({
   data: staticData,
   columns,
   handler,
@@ -1004,5 +1005,12 @@ const NcTable = <T extends Record<string, unknown>>({
     </div>
   );
 };
+
+// Wrapped component with error boundary
+const NcTable = <T extends Record<string, unknown>>(props: NcTableProps<T>) => (
+  <ErrorBoundary>
+    <NcTableCore {...props} />
+  </ErrorBoundary>
+);
 
 export default NcTable;

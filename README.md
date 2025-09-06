@@ -23,13 +23,26 @@ A production-ready, feature-rich table component that supports both static and s
 
 ```bash
 npm install nc-table-react
-npm install react-i18next i18next lucide-react
+# Install peer dependencies:
+npm install react-i18next i18next lucide-react clsx class-variance-authority tailwind-merge date-fns
+# Install Radix UI dependencies:
+npm install @radix-ui/react-alert-dialog @radix-ui/react-checkbox @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-label @radix-ui/react-popover @radix-ui/react-select @radix-ui/react-slot @radix-ui/react-toast
 ```
 
 **Requirements:**
 
 - React 18+
 - TypeScript (recommended)
+
+### 🔧 Troubleshooting Installation
+
+If you encounter a `createSlot` import error, install the correct radix-ui version:
+
+```bash
+npm install @radix-ui/react-slot@^1.0.2
+```
+
+[See full installation troubleshooting guide](./INSTALLATION_FIX.md)
 
 ## 🎯 Quick Start
 
@@ -226,38 +239,38 @@ When your display column names differ from backend field names, use the `key` pr
 ```tsx
 const columns: Column<Employee>[] = [
   {
-    key: "statusDescription",        // Display field: "Active Employee"
+    key: "statusDescription", // Display field: "Active Employee"
     header: "Status Description",
     searchable: true,
     searchOverride: {
-      key: "Status",                 // 🎯 Backend field: sends "Status==1;"
+      key: "Status", // 🎯 Backend field: sends "Status==1;"
       dataType: "select",
       selectOptions: [
         { text: "Active Employee", value: "1" },
         { text: "Inactive Employee", value: "0" },
         { text: "Pending Approval", value: "2" },
-      ]
-    }
+      ],
+    },
   },
   {
-    key: "departmentName",           // Display field: "Engineering Dept"
-    header: "Department Name", 
+    key: "departmentName", // Display field: "Engineering Dept"
+    header: "Department Name",
     searchable: true,
     searchOverride: {
-      key: "DeptId",                 // 🎯 Backend field: sends "DeptId==ENG;"
+      key: "DeptId", // 🎯 Backend field: sends "DeptId==ENG;"
       dataType: "select",
       selectOptions: [
         { text: "Engineering Dept", value: "ENG" },
         { text: "Marketing Dept", value: "MKT" },
-      ]
-    }
+      ],
+    },
   },
   {
-    key: "name",                     // Same for display and backend
+    key: "name", // Same for display and backend
     header: "Name",
     searchable: true,
     // No key override - uses "name" for both display and backend
-  }
+  },
 ];
 ```
 
@@ -267,7 +280,7 @@ const columns: Column<Employee>[] = [
 // User searches: "Status Description" = "Active Employee"
 // Generated: "Status==1;"
 
-// User searches: "Department Name" = "Engineering Dept" AND "Status Description" = "Active Employee"  
+// User searches: "Department Name" = "Engineering Dept" AND "Status Description" = "Active Employee"
 // Generated: "DeptId==ENG;And$Status==1;"
 
 // User searches: "Name" contains "John"
