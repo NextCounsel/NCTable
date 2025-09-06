@@ -103,6 +103,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
   );
   const [error, setError] = useState<string | null>(null);
   const [isRequestInProgress, setIsRequestInProgress] = useState(false);
+  const [hasFailedRequest, setHasFailedRequest] = useState(false);
 
   // Enhanced search state
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
@@ -225,13 +226,14 @@ const NcTableCore = <T extends Record<string, unknown>>({
 
   // Fetch data when dependencies change (excluding advanced search scenarios)
   useEffect(() => {
-    if (handler && !isAdvancedSearchActive) {
+    if (handler && !isAdvancedSearchActive && !hasFailedRequest) {
       // Prevent multiple simultaneous requests
       if (isRequestInProgress) return;
 
       setIsRequestInProgress(true);
       setLoading(true);
       setError(null);
+      setHasFailedRequest(false); // Reset failure flag on new attempt
 
       const params: PaginationData = {
         PageNumber: currentPage,
@@ -262,6 +264,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
           setData([]);
           setTotalItems(0);
           setError(errorMessage);
+          setHasFailedRequest(true); // Prevent automatic retries
         })
         .finally(() => {
           setLoading(false);
@@ -299,6 +302,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
       if (handler && !isRequestInProgress) {
         setIsRequestInProgress(true);
         setLoading(true);
+        setHasFailedRequest(false); // Reset failure flag for user-initiated search
         const params: PaginationData = {
           PageNumber: 1,
           PageSize: currentPageSize,
@@ -324,6 +328,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
             setData([]);
             setTotalItems(0);
             setError(errorMessage);
+            setHasFailedRequest(true); // Prevent automatic retries
           })
           .finally(() => {
             setLoading(false);
@@ -350,6 +355,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
 
       // Call handler directly to avoid infinite loop
       if (handler) {
+        setHasFailedRequest(false); // Reset failure flag for user-initiated advanced search
         handler({
           PageNumber: 1,
           PageSize: currentPageSize,
@@ -379,6 +385,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
             setData([]);
             setTotalItems(0);
             setError(errorMessage);
+            setHasFailedRequest(true); // Prevent automatic retries
             setSearchTerm(filterString); // Set even on error to maintain filter state
             toast({
               title: "Error",
@@ -579,6 +586,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
       if (handler && !isRequestInProgress) {
         setIsRequestInProgress(true);
         setLoading(true);
+        setHasFailedRequest(false); // Reset failure flag for user-initiated page change
         const params: PaginationData = {
           PageNumber: page,
           PageSize: currentPageSize,
@@ -604,6 +612,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
             setData([]);
             setTotalItems(0);
             setError(errorMessage);
+            setHasFailedRequest(true); // Prevent automatic retries
           })
           .finally(() => {
             setLoading(false);
