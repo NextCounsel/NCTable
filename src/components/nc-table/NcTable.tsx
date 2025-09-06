@@ -228,7 +228,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
     effectiveSettings.sortDirection,
     searchTerm,
     isAdvancedSearchActive,
-    fetchData,
+    // fetchData removed - would cause infinite loop since it's recreated when its deps change
   ]);
 
   // Internal search handler

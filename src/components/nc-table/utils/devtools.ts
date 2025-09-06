@@ -8,7 +8,10 @@
  */
 export const isDevelopment = () => {
   try {
-    return typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
+    // Check for common development indicators
+    return (typeof process !== 'undefined' && (process as any).env?.NODE_ENV === 'development') ||
+           (typeof window !== 'undefined' && (window as any).location?.hostname === 'localhost') ||
+           false;
   } catch {
     return false;
   }
