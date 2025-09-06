@@ -104,6 +104,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
   const [error, setError] = useState<string | null>(null);
   const [isRequestInProgress, setIsRequestInProgress] = useState(false);
   const [hasFailedRequest, setHasFailedRequest] = useState(false);
+  const [lastRequestParams, setLastRequestParams] = useState<string | null>(null);
 
   // Enhanced search state
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
@@ -132,6 +133,16 @@ const NcTableCore = <T extends Record<string, unknown>>({
   const currentPageSize = useMemo(() => effectiveSettings.pageSize, [effectiveSettings.pageSize]);
   const currentSortBy = useMemo(() => effectiveSettings.sortBy, [effectiveSettings.sortBy]);
   const currentSortDirection = useMemo(() => effectiveSettings.sortDirection, [effectiveSettings.sortDirection]);
+
+  // Create parameter signature for deduplication
+  const createParamsSignature = useCallback((params: PaginationData) => {
+    return JSON.stringify({
+      page: params.PageNumber,
+      size: params.PageSize,
+      filter: params.Filter || '',
+      order: params.Order || ''
+    });
+  }, []);
 
   // Fetch data using the handler
   const fetchData = useCallback(
@@ -210,8 +221,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
     ]
   );
 
-  // Track if we're in the middle of an advanced search to prevent double fetching
-  const [isAdvancedSearchActive, setIsAdvancedSearchActive] = useState(false);
+  // Removed isAdvancedSearchActive - no longer needed with parameter deduplication
 
   // Handle error toasts separately to avoid fetchData recreation
   useEffect(() => {
@@ -224,17 +234,9 @@ const NcTableCore = <T extends Record<string, unknown>>({
     }
   }, [error, toast]);
 
-  // Fetch data when dependencies change (excluding advanced search scenarios)
+  // Fetch data when dependencies change (with parameter deduplication)
   useEffect(() => {
-    if (handler && !isAdvancedSearchActive && !hasFailedRequest) {
-      // Prevent multiple simultaneous requests
-      if (isRequestInProgress) return;
-
-      setIsRequestInProgress(true);
-      setLoading(true);
-      setError(null);
-      setHasFailedRequest(false); // Reset failure flag on new attempt
-
+    if (handler && !hasFailedRequest) {
       const params: PaginationData = {
         PageNumber: currentPage,
         PageSize: currentPageSize,
@@ -246,71 +248,19 @@ const NcTableCore = <T extends Record<string, unknown>>({
         params.Filter = searchTerm;
       }
 
-      handler(params)
-        .then((response) => {
-          if (response && response.Data) {
-            setData(response.Data);
-            setTotalItems(response.Count || 0);
-            setError(null);
-          } else {
-            setData([]);
-            setTotalItems(0);
-            setError("No data received from server");
-          }
-        })
-        .catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : "Failed to fetch data";
-          console.error("Error fetching table data:", error);
-          setData([]);
-          setTotalItems(0);
-          setError(errorMessage);
-          setHasFailedRequest(true); // Prevent automatic retries
-        })
-        .finally(() => {
-          setLoading(false);
-          setIsRequestInProgress(false);
-        });
-    } else if (staticData) {
-      setData(staticData);
-      setTotalItems(staticData.length);
-    }
-  }, [
-    handler,
-    staticData,
-    currentPage,
-    currentPageSize,
-    currentSortBy,
-    currentSortDirection,
-    searchTerm,
-    isAdvancedSearchActive,
-    // isRequestInProgress REMOVED - it changes inside the effect, causing infinite loops!
-    // Direct implementation to avoid fetchData function recreation issues
-  ]);
+      // Create signature for this request
+      const paramsSignature = createParamsSignature(params);
 
-  // Internal search handler
-  const handleSearch = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setSearchTerm(value);
-      setCurrentPage(1);
-
-      if (externalOnSearch) {
-        externalOnSearch("", value);
-      }
-
-      // Direct handler call to avoid fetchData dependency
-      if (handler && !isRequestInProgress) {
+      // Only make request if parameters are different from last request
+      if (paramsSignature !== lastRequestParams && !isRequestInProgress) {
+        setLastRequestParams(paramsSignature);
         setIsRequestInProgress(true);
         setLoading(true);
-        setHasFailedRequest(false); // Reset failure flag for user-initiated search
-        const params: PaginationData = {
-          PageNumber: 1,
-          PageSize: currentPageSize,
-          Order: currentSortBy ? `${currentSortBy};${currentSortDirection}` : undefined,
-        };
-        if (value && value.trim() !== "") {
-          params.Filter = value;
-        }
+        setError(null);
+        setHasFailedRequest(false);
+
+        console.log("Making request with params:", params);
+
         handler(params)
           .then((response) => {
             if (response && response.Data) {
@@ -325,6 +275,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
           })
           .catch((error) => {
             const errorMessage = error instanceof Error ? error.message : "Failed to fetch data";
+            console.error("Error fetching table data:", error);
             setData([]);
             setTotalItems(0);
             setError(errorMessage);
@@ -335,81 +286,59 @@ const NcTableCore = <T extends Record<string, unknown>>({
             setIsRequestInProgress(false);
           });
       }
+    } else if (staticData) {
+      setData(staticData);
+      setTotalItems(staticData.length);
+    }
+  }, [
+    handler,
+    staticData,
+    currentPage,
+    currentPageSize,
+    currentSortBy,
+    currentSortDirection,
+    searchTerm,
+    lastRequestParams,
+    createParamsSignature,
+    isRequestInProgress,
+    hasFailedRequest,
+  ]);
+
+  // Internal search handler - simplified to just set state
+  const handleSearch = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setSearchTerm(value);
+      setCurrentPage(1);
+      setHasFailedRequest(false); // Reset failure flag for user-initiated action
+
+      if (externalOnSearch) {
+        externalOnSearch("", value);
+      }
+      
+      // Main useEffect will handle the request automatically
     },
-    [externalOnSearch, handler, currentPageSize, currentSortBy, currentSortDirection, isRequestInProgress]
+    [externalOnSearch]
   );
 
-  // Advanced search handler
+  // Advanced search handler - simplified to just set state
   const handleAdvancedSearch = useCallback(
     (filters: SearchFilter[]) => {
       setSearchFilters(filters);
       setCurrentPage(1);
-      setIsAdvancedSearchActive(true); // Prevent useEffect from double-fetching
+      setHasFailedRequest(false); // Reset failure flag for user-initiated action
 
       if (onAdvancedSearch) {
         onAdvancedSearch(filters);
       }
 
-      // 🎯 NEW: Build structured filter string for backend
+      // Build structured filter string for backend
       const filterString = buildFilterString(filters, columns);
-
-      // Call handler directly to avoid infinite loop
-      if (handler) {
-        setHasFailedRequest(false); // Reset failure flag for user-initiated advanced search
-        handler({
-          PageNumber: 1,
-          PageSize: currentPageSize,
-          Filter: filterString || undefined,
-          Order: currentSortBy
-            ? `${currentSortBy};${currentSortDirection}`
-            : undefined,
-        })
-          .then((response) => {
-            if (response && response.Data) {
-              setData(response.Data);
-              setTotalItems(response.Count || 0);
-              setError(null);
-              // ✅ Set searchTerm AFTER successful response to avoid triggering useEffect
-              setSearchTerm(filterString);
-            } else {
-              setData([]);
-              setTotalItems(0);
-              setError("No data received from server");
-              setSearchTerm(filterString); // Set even on empty response
-            }
-          })
-          .catch((error) => {
-            const errorMessage =
-              error instanceof Error ? error.message : "Failed to fetch data";
-            console.error("Error in advanced search:", error);
-            setData([]);
-            setTotalItems(0);
-            setError(errorMessage);
-            setHasFailedRequest(true); // Prevent automatic retries
-            setSearchTerm(filterString); // Set even on error to maintain filter state
-            toast({
-              title: "Error",
-              description: errorMessage,
-              variant: "destructive",
-            });
-          })
-          .finally(() => {
-            setIsAdvancedSearchActive(false); // Re-enable normal useEffect fetching
-          });
-      } else {
-        setIsAdvancedSearchActive(false); // Re-enable if no handler
-        setSearchTerm(filterString); // Set for static data mode
-      }
+      
+      // Set search term immediately - main useEffect will handle the request
+      setSearchTerm(filterString);
     },
-    [
-      onAdvancedSearch,
-      handler,
-      currentPageSize,
-      currentSortBy,
-      currentSortDirection,
-      columns,
-      toast,
-    ]
+    [onAdvancedSearch, columns, buildFilterString]
   );
 
   // Delete handlers
@@ -571,56 +500,21 @@ const NcTableCore = <T extends Record<string, unknown>>({
     setShowBulkDeleteConfirmation(false);
   }, []);
 
-  // Internal page change handler
+  // Internal page change handler - simplified to just set state
   const handlePageChange = useCallback(
     (page: number) => {
       console.log("handlePageChange called with page:", page);
       console.log("Current page before change:", currentPage);
       setCurrentPage(page);
+      setHasFailedRequest(false); // Reset failure flag for user-initiated action
 
       if (externalOnPageChange) {
         externalOnPageChange(page);
       }
 
-      // Direct handler call to avoid fetchData dependency
-      if (handler && !isRequestInProgress) {
-        setIsRequestInProgress(true);
-        setLoading(true);
-        setHasFailedRequest(false); // Reset failure flag for user-initiated page change
-        const params: PaginationData = {
-          PageNumber: page,
-          PageSize: currentPageSize,
-          Order: currentSortBy ? `${currentSortBy};${currentSortDirection}` : undefined,
-        };
-        if (searchTerm && searchTerm.trim() !== "") {
-          params.Filter = searchTerm;
-        }
-        handler(params)
-          .then((response) => {
-            if (response && response.Data) {
-              setData(response.Data);
-              setTotalItems(response.Count || 0);
-              setError(null);
-            } else {
-              setData([]);
-              setTotalItems(0);
-              setError("No data received from server");
-            }
-          })
-          .catch((error) => {
-            const errorMessage = error instanceof Error ? error.message : "Failed to fetch data";
-            setData([]);
-            setTotalItems(0);
-            setError(errorMessage);
-            setHasFailedRequest(true); // Prevent automatic retries
-          })
-          .finally(() => {
-            setLoading(false);
-            setIsRequestInProgress(false);
-          });
-      }
+      // Main useEffect will handle the request automatically
     },
-    [externalOnPageChange, handler, currentPage, currentPageSize, currentSortBy, currentSortDirection, searchTerm, isRequestInProgress]
+    [externalOnPageChange, currentPage]
   );
 
   // Internal settings change handler - separated for UI vs data settings
