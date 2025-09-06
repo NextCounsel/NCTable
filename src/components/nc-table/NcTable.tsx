@@ -184,12 +184,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
         setTotalItems(0);
         setError(errorMessage);
 
-        // Show error toast
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        // Show error toast (will be handled in useEffect)
       } finally {
         setLoading(false);
         setIsRequestInProgress(false);
@@ -202,13 +197,24 @@ const NcTableCore = <T extends Record<string, unknown>>({
       effectiveSettings.sortBy,
       effectiveSettings.sortDirection,
       searchTerm,
-      isRequestInProgress,
-      toast,
+      // isRequestInProgress removed - it's only used internally to prevent concurrent requests
+      // toast removed - causes fetchData recreation, will handle error toast separately
     ]
   );
 
   // Track if we're in the middle of an advanced search to prevent double fetching
   const [isAdvancedSearchActive, setIsAdvancedSearchActive] = useState(false);
+
+  // Handle error toasts separately to avoid fetchData recreation
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   // Fetch data when dependencies change (excluding advanced search scenarios)
   useEffect(() => {
