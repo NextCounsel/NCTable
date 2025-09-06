@@ -295,12 +295,43 @@ const NcTableCore = <T extends Record<string, unknown>>({
         externalOnSearch("", value);
       }
 
-      // Use fetchData with override parameters to get immediate results with correct values
-      if (handler) {
-        fetchData({ page: 1, search: value });
+      // Direct handler call to avoid fetchData dependency
+      if (handler && !isRequestInProgress) {
+        setIsRequestInProgress(true);
+        setLoading(true);
+        const params: PaginationData = {
+          PageNumber: 1,
+          PageSize: currentPageSize,
+          Order: currentSortBy ? `${currentSortBy};${currentSortDirection}` : undefined,
+        };
+        if (value && value.trim() !== "") {
+          params.Filter = value;
+        }
+        handler(params)
+          .then((response) => {
+            if (response && response.Data) {
+              setData(response.Data);
+              setTotalItems(response.Count || 0);
+              setError(null);
+            } else {
+              setData([]);
+              setTotalItems(0);
+              setError("No data received from server");
+            }
+          })
+          .catch((error) => {
+            const errorMessage = error instanceof Error ? error.message : "Failed to fetch data";
+            setData([]);
+            setTotalItems(0);
+            setError(errorMessage);
+          })
+          .finally(() => {
+            setLoading(false);
+            setIsRequestInProgress(false);
+          });
       }
     },
-    [externalOnSearch, handler, fetchData]
+    [externalOnSearch, handler, currentPageSize, currentSortBy, currentSortDirection, isRequestInProgress]
   );
 
   // Advanced search handler
@@ -544,12 +575,43 @@ const NcTableCore = <T extends Record<string, unknown>>({
         externalOnPageChange(page);
       }
 
-      // Use fetchData with override parameters to get immediate results with correct page
-      if (handler) {
-        fetchData({ page });
+      // Direct handler call to avoid fetchData dependency
+      if (handler && !isRequestInProgress) {
+        setIsRequestInProgress(true);
+        setLoading(true);
+        const params: PaginationData = {
+          PageNumber: page,
+          PageSize: currentPageSize,
+          Order: currentSortBy ? `${currentSortBy};${currentSortDirection}` : undefined,
+        };
+        if (searchTerm && searchTerm.trim() !== "") {
+          params.Filter = searchTerm;
+        }
+        handler(params)
+          .then((response) => {
+            if (response && response.Data) {
+              setData(response.Data);
+              setTotalItems(response.Count || 0);
+              setError(null);
+            } else {
+              setData([]);
+              setTotalItems(0);
+              setError("No data received from server");
+            }
+          })
+          .catch((error) => {
+            const errorMessage = error instanceof Error ? error.message : "Failed to fetch data";
+            setData([]);
+            setTotalItems(0);
+            setError(errorMessage);
+          })
+          .finally(() => {
+            setLoading(false);
+            setIsRequestInProgress(false);
+          });
       }
     },
-    [externalOnPageChange, handler, fetchData, currentPage]
+    [externalOnPageChange, handler, currentPage, currentPageSize, currentSortBy, currentSortDirection, searchTerm, isRequestInProgress]
   );
 
   // Internal settings change handler - separated for UI vs data settings
