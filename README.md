@@ -95,7 +95,76 @@ export default function App() {
 }
 ```
 
-## 🌐 Server-side Data
+## 📊 Usage Modes: Client-side vs Server-side
+
+**nc-table-react automatically detects the usage mode based on the props you provide. No manual configuration needed!**
+
+### 🖥️ Client-side Mode (Static Data)
+**Triggered when:** You provide the `data` prop
+
+```tsx
+<NcTable
+  data={users}           // ✅ Static array provided
+  columns={columns}
+  actions={actions}
+  idField="id"
+  // No handler needed
+/>
+```
+
+**How it works:**
+- ✅ Table uses your static `data` array directly
+- ✅ Filtering/sorting happens **in memory** on the frontend
+- ✅ No API calls are made
+- ✅ Perfect for small datasets or pre-loaded data
+- ✅ Instant search and sorting
+
+---
+
+### 🌐 Server-side Mode (Dynamic Data)
+**Triggered when:** You provide the `handler` prop
+
+```tsx
+<NcTable
+  columns={columns}
+  handler={fetchTableData}  // ✅ Async function provided
+  actions={actions}
+  idField="id"
+  // No data prop needed
+/>
+```
+
+**How it works:**
+- ✅ Table calls your `handler` function for data
+- ✅ Filtering/sorting happens **on your backend**
+- ✅ API calls made for pagination, search, sorting
+- ✅ Perfect for large datasets or real-time data
+- ✅ Advanced search filters sent to your backend
+
+---
+
+### 📋 Mode Comparison
+
+| Feature | Client-side (`data` prop) | Server-side (`handler` prop) |
+|---------|--------------------------|------------------------------|
+| **Data Source** | Static array | API function |
+| **Filtering** | Frontend (JavaScript) | Backend (your API) |
+| **Sorting** | Frontend (JavaScript) | Backend (your API) |
+| **Pagination** | Frontend pagination | Server-side pagination |
+| **API Calls** | ❌ None | ✅ Yes (automatic) |
+| **Best For** | Small datasets, demos | Large datasets, production |
+| **Search Performance** | Instant | Depends on backend |
+
+### 🎯 Important Notes
+
+- **Mutually Exclusive**: Provide either `data` OR `handler`, not both
+- **Automatic Detection**: The table knows what to do based on your props
+- **Same API**: Identical component interface for both modes
+- **Filter Format**: In server-side mode, advanced search filters are sent as structured strings to your backend
+
+---
+
+## 🌐 Server-side Data (Detailed Example)
 
 ```tsx
 import type { NcTableProps } from "nc-table-react";
