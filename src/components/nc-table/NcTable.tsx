@@ -280,7 +280,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
     currentSortDirection,
     searchTerm,
     isAdvancedSearchActive,
-    isRequestInProgress,
+    // isRequestInProgress REMOVED - it changes inside the effect, causing infinite loops!
     // Direct implementation to avoid fetchData function recreation issues
   ]);
 
