@@ -14,7 +14,7 @@
  * ✅ TypeScript Support
  *
  * 🔗 GitHub: https://github.com/NextCounsel/NCTable.git
- * 📦 npm: npm install nc-table
+ * 📦 npm: npm install nc-table-react
  */
 
 import React, { useState, useCallback, useEffect } from "react";
@@ -935,7 +935,7 @@ export default function ComprehensiveExample() {
                   className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >
                   <span className="mr-2">📦</span>
-                  npm install nc-table
+                  npm install nc-table-react
                 </button>
                 <button
                   onClick={() =>
@@ -998,7 +998,7 @@ export default function ComprehensiveExample() {
                   </h3>
                   <button
                     onClick={() =>
-                      navigator.clipboard?.writeText("npm install nc-table")
+                      navigator.clipboard?.writeText("npm install nc-table-react")
                     }
                     className="text-gray-400 hover:text-white transition-colors text-sm"
                   >
@@ -1006,7 +1006,7 @@ export default function ComprehensiveExample() {
                   </button>
                 </div>
                 <code className="text-green-400 text-lg font-mono">
-                  npm install nc-table
+                  npm install nc-table-react
                 </code>
                 <div className="text-gray-400 text-sm mt-2">
                   Also install: react-i18next i18next lucide-react

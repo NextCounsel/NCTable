@@ -1,6 +1,26 @@
 {
-  "name": "nc-table",
-  "version": "0.1.0",
+  "name": "nc-table-react",
+  "version": "0.1.1",
+  "description": "Advanced React table component with search functionality and backend filter integration",
+  "keywords": [
+    "react",
+    "table",
+    "component",
+    "search",
+    "filter",
+    "pagination",
+    "typescript"
+  ],
+  "author": "bitflake <sopreneur@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NextCounsel/NCTable.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NextCounsel/NCTable/issues"
+  },
+  "homepage": "https://github.com/NextCounsel/NCTable#readme",
   "private": false,
   "type": "module",
   "main": "dist/index.cjs",

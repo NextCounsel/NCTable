@@ -1,4 +1,4 @@
-# nc-table
+# nc-table-react
 
 **Flexible React table component with advanced search, actions, settings, selection, and pagination.**
 
@@ -21,7 +21,7 @@ A production-ready, feature-rich table component that supports both static and s
 ## 📦 Installation
 
 ```bash
-npm install nc-table
+npm install nc-table-react
 npm install react-i18next i18next lucide-react
 ```
 
@@ -34,7 +34,7 @@ npm install react-i18next i18next lucide-react
 
 ```tsx
 import React from "react";
-import { NcTable, type Column, type TableAction } from "nc-table";
+import { NcTable, type Column, type TableAction } from "nc-table-react";
 import i18n from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 
@@ -84,7 +84,7 @@ export default function App() {
 ## 🌐 Server-side Data
 
 ```tsx
-import type { NcTableProps } from "nc-table";
+import type { NcTableProps } from "nc-table-react";
 
 type Item = { id: number; name: string };
 
@@ -222,7 +222,7 @@ The component provides 12 powerful comparison operators:
 
 ```tsx
 import React, { useState } from "react";
-import { NcTable, type Column, type TableAction } from "nc-table";
+import { NcTable, type Column, type TableAction } from "nc-table-react";
 
 type Employee = {
   id: number;
@@ -547,6 +547,6 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 ## 🔗 Repository
 
 - **GitHub**: [NextCounsel/NCTable](https://github.com/NextCounsel/NCTable)
-- **npm**: [nc-table](https://www.npmjs.com/package/nc-table)
+- **npm**: [nc-table-react](https://www.npmjs.com/package/nc-table-react)
 
 **Built with ❤️ for modern React applications**
