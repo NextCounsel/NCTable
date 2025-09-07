@@ -104,7 +104,9 @@ const NcTableCore = <T extends Record<string, unknown>>({
   const [error, setError] = useState<string | null>(null);
   const [isRequestInProgress, setIsRequestInProgress] = useState(false);
   const [hasFailedRequest, setHasFailedRequest] = useState(false);
-  const [lastRequestParams, setLastRequestParams] = useState<string | null>(null);
+  const [lastRequestParams, setLastRequestParams] = useState<string | null>(
+    null
+  );
 
   // Enhanced search state
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
@@ -130,17 +132,26 @@ const NcTableCore = <T extends Record<string, unknown>>({
   const shouldUseInternalSettings = enableInternalSettings && !externalSettings;
 
   // Extract stable values for useEffect dependencies to prevent infinite loops
-  const currentPageSize = useMemo(() => effectiveSettings.pageSize, [effectiveSettings.pageSize]);
-  const currentSortBy = useMemo(() => effectiveSettings.sortBy, [effectiveSettings.sortBy]);
-  const currentSortDirection = useMemo(() => effectiveSettings.sortDirection, [effectiveSettings.sortDirection]);
+  const currentPageSize = useMemo(
+    () => effectiveSettings.pageSize,
+    [effectiveSettings.pageSize]
+  );
+  const currentSortBy = useMemo(
+    () => effectiveSettings.sortBy,
+    [effectiveSettings.sortBy]
+  );
+  const currentSortDirection = useMemo(
+    () => effectiveSettings.sortDirection,
+    [effectiveSettings.sortDirection]
+  );
 
   // Create parameter signature for deduplication
   const createParamsSignature = useCallback((params: PaginationData) => {
     return JSON.stringify({
       page: params.PageNumber,
       size: params.PageSize,
-      filter: params.Filter || '',
-      order: params.Order || ''
+      filter: params.Filter || "",
+      order: params.Order || "",
     });
   }, []);
 
@@ -240,7 +251,9 @@ const NcTableCore = <T extends Record<string, unknown>>({
       const params: PaginationData = {
         PageNumber: currentPage,
         PageSize: currentPageSize,
-        Order: currentSortBy ? `${currentSortBy};${currentSortDirection}` : undefined,
+        Order: currentSortBy
+          ? `${currentSortBy};${currentSortDirection}`
+          : undefined,
       };
 
       // Only add Filter property if it has a value
@@ -274,7 +287,8 @@ const NcTableCore = <T extends Record<string, unknown>>({
             }
           })
           .catch((error) => {
-            const errorMessage = error instanceof Error ? error.message : "Failed to fetch data";
+            const errorMessage =
+              error instanceof Error ? error.message : "Failed to fetch data";
             console.error("Error fetching table data:", error);
             setData([]);
             setTotalItems(0);
@@ -315,7 +329,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
       if (externalOnSearch) {
         externalOnSearch("", value);
       }
-      
+
       // Main useEffect will handle the request automatically
     },
     [externalOnSearch]
@@ -334,7 +348,7 @@ const NcTableCore = <T extends Record<string, unknown>>({
 
       // Build structured filter string for backend
       const filterString = buildFilterString(filters, columns);
-      
+
       // Set search term immediately - main useEffect will handle the request
       setSearchTerm(filterString);
     },
