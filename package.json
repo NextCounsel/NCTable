@@ -1,6 +1,6 @@
 {
   "name": "nc-table-react",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Advanced React table component with search functionality and backend filter integration",
   "keywords": [
     "react",

@@ -3,7 +3,7 @@ import { Column } from "../types";
 
 /**
  * Builds a filter string in the format required by the backend:
- * - Single condition: `${column}${operator}${value};`
+ * - Single condition: `${column}${operator}${value}`
  * - Multiple conditions: `${column}${operator}${value};And$${column}${operator}${value};`
  *
  * @param filters - Array of search filters
@@ -53,9 +53,9 @@ export const buildFilterString = (
     return "";
   }
 
-  // Single condition: just add semicolon
+  // Single condition: no semicolon
   if (filterParts.length === 1) {
-    return `${filterParts[0]};`;
+    return filterParts[0];
   }
 
   // Multiple conditions: join with And$ and add trailing semicolon
@@ -110,7 +110,7 @@ export const testFilterStringBuilder = () => {
     { id: 1, column: "name", operator: "~=", value: "John" },
   ];
   console.log("Single filter:", buildFilterString(singleFilter));
-  // Expected: "name~=John;"
+  // Expected: "name~=John"
 
   // Test Case 2: Multiple filters
   const multipleFilters = [
