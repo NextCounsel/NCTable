@@ -155,6 +155,20 @@ const NcTableCore = <T extends Record<string, unknown>>({
     });
   }, []);
 
+  // Reset functions that work with parameter deduplication
+  const resetToAllData = useCallback(() => {
+    setSearchTerm(""); // Clear search
+    setCurrentPage(1); // Reset to first page
+    setHasFailedRequest(false); // Reset failure state
+    setError(null); // Clear any errors
+  }, []);
+
+  const retryCurrentSearch = useCallback(() => {
+    setHasFailedRequest(false); // Reset failure state
+    setError(null); // Clear any errors
+    // Keep current searchTerm and page - useEffect will retry with same parameters
+  }, []);
+
   // Fetch data using the handler
   const fetchData = useCallback(
     async (overrideParams?: {
@@ -815,14 +829,23 @@ const NcTableCore = <T extends Record<string, unknown>>({
         <h3 className="text-lg font-semibold text-red-600 mb-2">
           Error Loading Data
         </h3>
-        {/* <p className="text-gray-500 mb-4">{error}</p> */}
-        <Button
-          variant="outline"
-          onClick={() => fetchData()}
-          disabled={isRequestInProgress}
-        >
-          {isRequestInProgress ? "Retrying..." : "Try Again"}
-        </Button>
+        <p className="text-gray-500 mb-4">{error}</p>
+        <div className="flex gap-2 justify-center">
+          <Button
+            variant="outline"
+            onClick={retryCurrentSearch}
+            disabled={isRequestInProgress}
+          >
+            {isRequestInProgress ? "Retrying..." : "Try Again"}
+          </Button>
+          <Button
+            variant="default"
+            onClick={resetToAllData}
+            disabled={isRequestInProgress}
+          >
+            Show All Data
+          </Button>
+        </div>
       </div>
     );
   }
@@ -833,7 +856,16 @@ const NcTableCore = <T extends Record<string, unknown>>({
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           No Data Found
         </h3>
-        <p className="text-gray-500">{emptyStateMessage}</p>
+        <p className="text-gray-500 mb-4">{emptyStateMessage}</p>
+        {searchTerm && (
+          <Button
+            variant="outline"
+            onClick={resetToAllData}
+            disabled={isRequestInProgress}
+          >
+            Show All Data
+          </Button>
+        )}
       </div>
     );
   }
