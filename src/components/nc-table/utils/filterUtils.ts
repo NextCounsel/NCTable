@@ -4,7 +4,7 @@ import { Column } from "../types";
 /**
  * Builds a filter string in the format required by the backend:
  * - Single condition: `${column}${operator}${value}`
- * - Multiple conditions: `${column}${operator}${value};And$${column}${operator}${value};`
+ * - Multiple conditions: `${column}${operator}${value};And$${column}${operator}${value}`
  *
  * @param filters - Array of search filters
  * @param columns - Array of column definitions (used to resolve searchOverride.key)
@@ -58,8 +58,8 @@ export const buildFilterString = (
     return filterParts[0];
   }
 
-  // Multiple conditions: join with And$ and add trailing semicolon
-  return filterParts.join(";And$") + ";";
+  // Multiple conditions: join with And$ (no trailing semicolon)
+  return filterParts.join(";And$");
 };
 
 /**
@@ -119,7 +119,7 @@ export const testFilterStringBuilder = () => {
     { id: 3, column: "salary", operator: ">", value: "50000" },
   ];
   console.log("Multiple filters:", buildFilterString(multipleFilters));
-  // Expected: "name~=John;And$department==Engineering;And$salary>50000;"
+  // Expected: "name~=John;And$department==Engineering;And$salary>50000"
 
   // Test Case 3: Empty filters
   console.log("Empty filters:", buildFilterString([]));
@@ -135,7 +135,7 @@ export const testFilterStringBuilder = () => {
     "Filters with empty values:",
     buildFilterString(filtersWithEmpty)
   );
-  // Expected: "name~=John;And$salary>50000;"
+  // Expected: "name~=John;And$salary>50000"
 
   // Test Case 5: Complex values with spaces
   const complexFilters = [
@@ -143,5 +143,5 @@ export const testFilterStringBuilder = () => {
     { id: 2, column: "title", operator: "==", value: "Senior Engineer" },
   ];
   console.log("Complex values:", buildFilterString(complexFilters));
-  // Expected: "name~=John Doe;And$title==Senior Engineer;"
+  // Expected: "name~=John Doe;And$title==Senior Engineer"
 };
