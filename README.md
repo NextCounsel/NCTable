@@ -14,6 +14,8 @@ A production-ready, feature-rich table component that supports both static and s
 - ✅ **Sorting & Pagination** - Built-in sorting and configurable pagination
 - ✅ **CRUD Operations** - Built-in delete functionality with confirmation dialogs
 - ✅ **Export Features** - CSV, Excel, PDF export options
+- ✅ **Serial Number Column** - Optional row numbering with pagination-aware calculation
+- ✅ **Conditional Actions** - Show/hide table actions based on item data or static conditions
 - ✅ **Responsive Design** - Mobile-optimized interface
 - ✅ **TypeScript** - Full type safety and IntelliSense support
 - ✅ **Accessibility** - ARIA labels and keyboard navigation
@@ -78,33 +80,172 @@ const columns: Column<User>[] = [
 ];
 
 const actions: TableAction<User>[] = [
-  { label: "View", onClick: (u) => alert(`Viewing ${u.name}`) },
+  {
+    label: "View",
+    onClick: (u) => alert(`Viewing ${u.name}`),
+    show: true, // Always show
+  },
+  {
+    label: "Activate",
+    onClick: (u) => alert(`Activating ${u.name}`),
+    show: (u) => u.status === "inactive", // Only show for inactive users
+  },
 ];
 
 export default function App() {
   return (
     <I18nextProvider i18n={i18n}>
       <NcTable<User>
+        id="my-table"
         data={data}
         columns={columns}
         actions={actions}
         idField="id"
+        showSerialNumber={true}
       />
     </I18nextProvider>
   );
 }
 ```
 
+## 🔢 Serial Number Column
+
+The table includes an optional serial number column that shows row numbers based on the current page and position.
+
+### Basic Usage
+
+```tsx
+<NcTable
+  data={data}
+  columns={columns}
+  showSerialNumber={true} // Default: true
+  idField="id"
+/>
+```
+
+### Hide Serial Numbers
+
+```tsx
+<NcTable
+  data={data}
+  columns={columns}
+  showSerialNumber={false} // Hide serial number column
+  idField="id"
+/>
+```
+
+### Serial Number Calculation
+
+Serial numbers are calculated to be continuous across pages:
+
+- **Page 1** (pageSize=5): 1, 2, 3, 4, 5
+- **Page 2** (pageSize=5): 6, 7, 8, 9, 10
+- **Page 3** (pageSize=5): 11, 12, 13, 14, 15
+
+Formula: `(currentPage - 1) × pageSize + index + 1`
+
+## 🆔 Unique Table Instance IDs
+
+Each table instance can have a unique identifier for better isolation, testing, and debugging when using multiple tables.
+
+### Basic Usage
+
+```tsx
+<NcTable
+  id="users-table" // Unique ID for this table instance
+  data={data}
+  columns={columns}
+  idField="id"
+/>
+```
+
+### Benefits of Using IDs
+
+- **DOM Targeting**: Direct access via `document.getElementById('users-table')`
+- **Testing**: Easy targeting with `getByTestId('users-table')`
+- **Analytics**: Track specific table interactions
+- **Accessibility**: Screen readers can identify specific tables
+- **CSS Targeting**: More specific styling with `#users-table .table-header`
+
+## 🎯 Conditional Table Actions
+
+Table actions can be shown or hidden based on item data or static conditions using the `show` property.
+
+### Static Visibility
+
+```tsx
+const actions: TableAction<User>[] = [
+  {
+    label: "Edit",
+    icon: "Edit",
+    onClick: (user) => console.log("Edit", user),
+    show: true, // Always show
+  },
+  {
+    label: "Archive",
+    icon: "Archive",
+    onClick: (user) => console.log("Archive", user),
+    show: false, // Never show
+  },
+];
+```
+
+### Dynamic Visibility Based on Item Data
+
+```tsx
+const actions: TableAction<User>[] = [
+  {
+    label: "Activate",
+    icon: "User",
+    onClick: (user) => console.log("Activate", user),
+    show: (user) => user.status === "inactive", // Only show for inactive users
+  },
+  {
+    label: "Deactivate",
+    icon: "User",
+    onClick: (user) => console.log("Deactivate", user),
+    show: (user) => user.status === "active", // Only show for active users
+  },
+  {
+    label: "Delete",
+    icon: "Trash",
+    onClick: (user) => console.log("Delete", user),
+    variant: "destructive",
+    show: (user) => user.role !== "Admin", // Hide delete for admins
+  },
+  {
+    label: "Admin Actions",
+    icon: "Settings",
+    onClick: (user) => console.log("Admin Actions", user),
+    show: (user) => user.role === "Admin", // Only show for admins
+  },
+];
+```
+
+### Show Property Options
+
+| Value                  | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `undefined`            | Default behavior - always show the action |
+| `true`                 | Always show the action                    |
+| `false`                | Never show the action                     |
+| `(item: T) => boolean` | Show based on item data evaluation        |
+
+### Smart Action Column Display
+
+The actions column (dropdown menu) will only appear for rows that have at least one visible action. If all actions for a row are hidden, the actions column won't be rendered for that row.
+
 ## 📊 Usage Modes: Client-side vs Server-side
 
 **nc-table-react automatically detects the usage mode based on the props you provide. No manual configuration needed!**
 
 ### 🖥️ Client-side Mode (Static Data)
+
 **Triggered when:** You provide the `data` prop
 
 ```tsx
 <NcTable
-  data={users}           // ✅ Static array provided
+  data={users} // ✅ Static array provided
   columns={columns}
   actions={actions}
   idField="id"
@@ -113,6 +254,7 @@ export default function App() {
 ```
 
 **How it works:**
+
 - ✅ Table uses your static `data` array directly
 - ✅ Filtering/sorting happens **in memory** on the frontend
 - ✅ No API calls are made
@@ -122,12 +264,13 @@ export default function App() {
 ---
 
 ### 🌐 Server-side Mode (Dynamic Data)
+
 **Triggered when:** You provide the `handler` prop
 
 ```tsx
 <NcTable
   columns={columns}
-  handler={fetchTableData}  // ✅ Async function provided
+  handler={fetchTableData} // ✅ Async function provided
   actions={actions}
   idField="id"
   // No data prop needed
@@ -135,6 +278,7 @@ export default function App() {
 ```
 
 **How it works:**
+
 - ✅ Table calls your `handler` function for data
 - ✅ Filtering/sorting happens **on your backend**
 - ✅ API calls made for pagination, search, sorting
@@ -145,15 +289,15 @@ export default function App() {
 
 ### 📋 Mode Comparison
 
-| Feature | Client-side (`data` prop) | Server-side (`handler` prop) |
-|---------|--------------------------|------------------------------|
-| **Data Source** | Static array | API function |
-| **Filtering** | Frontend (JavaScript) | Backend (your API) |
-| **Sorting** | Frontend (JavaScript) | Backend (your API) |
-| **Pagination** | Frontend pagination | Server-side pagination |
-| **API Calls** | ❌ None | ✅ Yes (automatic) |
-| **Best For** | Small datasets, demos | Large datasets, production |
-| **Search Performance** | Instant | Depends on backend |
+| Feature                | Client-side (`data` prop) | Server-side (`handler` prop) |
+| ---------------------- | ------------------------- | ---------------------------- |
+| **Data Source**        | Static array              | API function                 |
+| **Filtering**          | Frontend (JavaScript)     | Backend (your API)           |
+| **Sorting**            | Frontend (JavaScript)     | Backend (your API)           |
+| **Pagination**         | Frontend pagination       | Server-side pagination       |
+| **API Calls**          | ❌ None                   | ✅ Yes (automatic)           |
+| **Best For**           | Small datasets, demos     | Large datasets, production   |
+| **Search Performance** | Instant                   | Depends on backend           |
 
 ### 🎯 Important Notes
 
@@ -427,12 +571,26 @@ const actions: TableAction<Employee>[] = [
     label: "Edit",
     onClick: (emp) => console.log("Edit", emp),
     icon: "edit",
+    show: true, // Always show
+  },
+  {
+    label: "Activate",
+    onClick: (emp) => console.log("Activate", emp),
+    icon: "user",
+    show: (emp) => emp.status === "inactive", // Only show for inactive employees
+  },
+  {
+    label: "Deactivate",
+    onClick: (emp) => console.log("Deactivate", emp),
+    icon: "user",
+    show: (emp) => emp.status === "active", // Only show for active employees
   },
   {
     label: "Delete",
     onClick: (emp) => console.log("Delete", emp),
     variant: "destructive",
     icon: "trash",
+    show: (emp) => emp.role !== "Admin", // Hide delete for admins
   },
 ];
 
@@ -470,6 +628,8 @@ export default function AdvancedExample() {
       columns={columns}
       actions={actions}
       idField="id"
+      // Serial Numbers
+      showSerialNumber={true}
       // Search & Filtering
       showAdvancedSearch={true}
       onAdvancedSearch={handleAdvancedSearch}
@@ -520,13 +680,15 @@ export default function AdvancedExample() {
 
 ### Core Props
 
-| Prop       | Type               | Description                               |
-| ---------- | ------------------ | ----------------------------------------- |
-| `data?`    | `T[]`              | Static data array                         |
-| `columns`  | `Column<T>[]`      | Table column definitions                  |
-| `handler?` | `DataHandler<T>`   | Async data function for server-side data  |
-| `actions?` | `TableAction<T>[]` | Row action menu items                     |
-| `idField?` | `keyof T`          | Unique identifier field (default: `"Id"`) |
+| Prop                | Type               | Description                                 |
+| ------------------- | ------------------ | ------------------------------------------- |
+| `data?`             | `T[]`              | Static data array                           |
+| `columns`           | `Column<T>[]`      | Table column definitions                    |
+| `handler?`          | `DataHandler<T>`   | Async data function for server-side data    |
+| `actions?`          | `TableAction<T>[]` | Row action menu items                       |
+| `idField?`          | `keyof T`          | Unique identifier field (default: `"Id"`)   |
+| `showSerialNumber?` | `boolean`          | Show serial number column (default: `true`) |
+| `id?`               | `string`           | Unique identifier for this table instance   |
 
 ### Search & Filtering
 
@@ -603,6 +765,7 @@ type TableAction<T> = {
   variant?: "default" | "destructive";
   className?: string;
   separator?: boolean;
+  show?: boolean | ((item: T) => boolean);
 };
 
 type DataHandler<T> = (params: {
@@ -696,3 +859,60 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 - **npm**: [nc-table-react](https://www.npmjs.com/package/nc-table-react)
 
 **Built with ❤️ for modern React applications**
+
+---
+
+## 📝 Changelog
+
+### v0.3.6 (Latest)
+
+#### ✨ New Features
+
+- **Unique Table Instance IDs**: Added `id` prop for unique table identification
+  - Enables better isolation when using multiple table instances
+  - Supports DOM targeting, testing, analytics, and accessibility
+  - Optional prop with no breaking changes
+
+#### 📚 Documentation
+
+- Updated README with ID prop usage and benefits
+- Enhanced Multiple Instances Guide with ID best practices
+- Added comprehensive examples and testing strategies
+
+### v0.3.5
+
+#### ✨ New Features
+
+- **Serial Number Column**: Added `showSerialNumber` prop to control display of row numbers
+  - Defaults to `true`
+  - Shows pagination-aware serial numbers: `(currentPage - 1) × pageSize + index + 1`
+  - Header displays "S/No"
+- **Conditional Table Actions**: Added `show` property to `TableAction` interface
+  - Static visibility: `show: true | false`
+  - Dynamic visibility: `show: (item) => boolean`
+  - Smart action column display - only shows when there are visible actions
+
+#### 🔧 Improvements
+
+- Enhanced action rendering logic with conditional visibility
+- Improved table layout with optional serial number column
+- Better TypeScript support for new properties
+
+#### 📚 Documentation
+
+- Added comprehensive examples for new features
+- Updated API reference with new props
+- Enhanced usage examples with conditional actions
+
+### v0.3.4
+
+- Fixed React JSX runtime bundling issues
+- Improved React 18.3.1 compatibility
+- Resolved `ReactCurrentDispatcher` errors
+
+### v0.3.3
+
+- Initial stable release
+- Core table functionality
+- Advanced search and filtering
+- Server-side data support

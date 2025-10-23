@@ -1,7 +1,7 @@
 {
   "name": "nc-table-react",
-  "version": "0.3.3",
-  "description": "Advanced React table component with search functionality and backend filter integration",
+  "version": "0.4.0",
+  "description": "Advanced React table component with search functionality, backend filter integration, and customizable response formats",
   "keywords": [
     "react",
     "table",
@@ -9,7 +9,9 @@
     "search",
     "filter",
     "pagination",
-    "typescript"
+    "typescript",
+    "api-integration",
+    "custom-response-format"
   ],
   "author": "bitflake <sopreneur@gmail.com>",
   "license": "MIT",
@@ -69,6 +71,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^15.6.1",
+    "rimraf": "^6.0.1",
     "typescript": "^5.5.3",
     "vite": "^5.4.1",
     "vite-plugin-dts": "^4.2.3"

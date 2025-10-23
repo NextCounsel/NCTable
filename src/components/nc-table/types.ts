@@ -1,6 +1,10 @@
 import { ReactNode } from "react";
 import { PaginationData } from "@/models/IApp";
-import { IApiResponse } from "@/models/IApiResponse";
+import {
+  IApiResponse,
+  GenericApiResponse,
+  ResponseConfig,
+} from "@/models/IApiResponse";
 import type {
   BulkAction,
   ExportOption,
@@ -26,6 +30,7 @@ export interface TableAction<T> {
   variant?: "default" | "destructive";
   className?: string;
   separator?: boolean;
+  show?: boolean | ((item: T) => boolean);
 }
 
 export interface TableSettings {
@@ -93,14 +98,21 @@ export interface TableDataResponse<T> {
   totalPages: number;
 }
 
-export type DataHandler<T> = (
+// Generic data handler that can work with any response format
+export type DataHandler<T, R = IApiResponse<T[]>> = (
   params: PaginationData
-) => Promise<IApiResponse<T[]>>;
+) => Promise<R>;
+
+// Legacy type alias for backward compatibility
+export type LegacyDataHandler<T> = DataHandler<T, IApiResponse<T[]>>;
 
 export interface NcTableProps<T> {
+  // Unique identifier for this table instance
+  id?: string;
   data?: T[];
   columns: Column<T>[];
-  handler?: DataHandler<T>;
+  handler?: DataHandler<T, any>;
+  responseConfig?: ResponseConfig<T>; // Configuration for custom response format
   actions?: TableAction<T>[];
   settings?: TableSettings;
   onSettingsChange?: (settings: TableSettings) => void;
@@ -156,4 +168,7 @@ export interface NcTableProps<T> {
   removeItemHandler?: (
     ids: (string | number)[]
   ) => Promise<IApiResponse<unknown> | void> | IApiResponse<unknown> | void;
+
+  // Serial number functionality
+  showSerialNumber?: boolean;
 }

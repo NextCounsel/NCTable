@@ -40,11 +40,14 @@ import {
 import Icon from "./utils/iconMap";
 import { buildFilterString } from "./utils/filterUtils";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { mapResponse } from "./utils/responseUtils";
 
 const NcTableCore = <T extends Record<string, unknown>>({
+  id,
   data: staticData,
   columns,
   handler,
+  responseConfig,
   actions,
   settings: externalSettings,
   onSettingsChange,
@@ -83,6 +86,9 @@ const NcTableCore = <T extends Record<string, unknown>>({
   // Delete functionality props
   canDelete = false,
   removeItemHandler,
+
+  // Serial number functionality props
+  showSerialNumber = true,
 }: NcTableProps<T>) => {
   // Internal state management
   const [internalSettings, setInternalSettings] = useState<TableSettings>({
@@ -209,14 +215,17 @@ const NcTableCore = <T extends Record<string, unknown>>({
 
         const response = await handler(params);
 
-        if (response && response.Data) {
-          setData(response.Data);
-          setTotalItems(response.Count || 0);
+        // Map the response using the configured format
+        const mappedResponse = mapResponse(response, responseConfig);
+
+        if (mappedResponse.success && mappedResponse.data) {
+          setData(mappedResponse.data);
+          setTotalItems(mappedResponse.count || 0);
           setError(null);
         } else {
           setData([]);
           setTotalItems(0);
-          setError("No data received from server");
+          setError(mappedResponse.message || "No data received from server");
         }
       } catch (error) {
         const errorMessage =
@@ -678,6 +687,19 @@ const NcTableCore = <T extends Record<string, unknown>>({
     return baseActions;
   }, [actions, canDelete, removeItemHandler, handleDeleteClick]);
 
+  // Helper function to check if there are any visible actions for an item
+  const hasVisibleActions = useCallback(
+    (item: T) => {
+      return enhancedActions.some((action) => {
+        const shouldShow =
+          action.show === undefined ||
+          (typeof action.show === "boolean" ? action.show : action.show(item));
+        return shouldShow;
+      });
+    },
+    [enhancedActions]
+  );
+
   // Enhanced bulk actions with delete
   const enhancedBulkActions = useMemo(() => {
     const baseBulkActions = bulkActions || [];
@@ -739,7 +761,10 @@ const NcTableCore = <T extends Record<string, unknown>>({
       {/* Table Skeleton */}
       <div className="relative overflow-hidden rounded-md border">
         <div className="overflow-x-auto overflow-y-visible w-full">
-          <table className="min-w-full divide-y divide-gray-200 table-fixed">
+          <table
+            id={id}
+            className="min-w-full divide-y divide-gray-200 table-fixed"
+          >
             <thead className="bg-gray-50">
               <tr>
                 {selectable && (
@@ -747,9 +772,11 @@ const NcTableCore = <T extends Record<string, unknown>>({
                     <Skeleton className="h-4 w-4" />
                   </th>
                 )}
-                <th className="px-6 py-3 text-left w-20">
-                  <Skeleton className="h-4 w-8" />
-                </th>
+                {showSerialNumber && (
+                  <th className="px-6 py-3 text-left w-20">
+                    <Skeleton className="h-4 w-8" />
+                  </th>
+                )}
                 {visibleColumns.map((column, index) => (
                   <th
                     key={index}
@@ -773,9 +800,11 @@ const NcTableCore = <T extends Record<string, unknown>>({
                         <Skeleton className="h-4 w-4" />
                       </td>
                     )}
-                    <td className="px-6 py-4">
-                      <Skeleton className="h-4 w-8" />
-                    </td>
+                    {showSerialNumber && (
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-4 w-8" />
+                      </td>
+                    )}
                     {visibleColumns.map((column, colIndex) => (
                       <td
                         key={colIndex}
@@ -917,7 +946,10 @@ const NcTableCore = <T extends Record<string, unknown>>({
       {/* Table */}
       <div className="relative overflow-hidden rounded-md border">
         <div className="overflow-x-auto overflow-y-visible w-full">
-          <table className="min-w-full divide-y divide-gray-200 table-fixed">
+          <table
+            id={id}
+            className="min-w-full divide-y divide-gray-200 table-fixed"
+          >
             <thead className="bg-gray-50">
               <tr>
                 {selectable && (
@@ -932,9 +964,11 @@ const NcTableCore = <T extends Record<string, unknown>>({
                   </th>
                 )}
                 {/* Serial Number Column */}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  SNO
-                </th>
+                {showSerialNumber && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                    S/No
+                  </th>
+                )}
                 {visibleColumns.map((column) => (
                   <th
                     key={column.key}
@@ -981,9 +1015,11 @@ const NcTableCore = <T extends Record<string, unknown>>({
                       </td>
                     )}
                     {/* Serial Number Cell */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {serialNumber}
-                    </td>
+                    {showSerialNumber && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                        {serialNumber}
+                      </td>
+                    )}
                     {visibleColumns.map((column) => (
                       <td
                         key={column.key}
@@ -997,46 +1033,63 @@ const NcTableCore = <T extends Record<string, unknown>>({
                         </div>
                       </td>
                     ))}
-                    {enhancedActions && enhancedActions.length > 0 && (
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            {/* <DropdownMenuLabel>Actions</DropdownMenuLabel> */}
-                            {/* <DropdownMenuSeparator /> */}
-                            {enhancedActions.map((action, actionIndex) => (
-                              <div key={actionIndex}>
-                                {action.separator && <DropdownMenuSeparator />}
-                                <DropdownMenuItem
-                                  onClick={() => action.onClick(item)}
-                                  className={`py-2 text-sm ${
-                                    action.variant === "destructive"
-                                      ? "text-red-600"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {action.icon && (
-                                    <span className="mr-3 h-4 w-4 text-secondary-foreground/70">
-                                      {typeof action.icon === "string" ? (
-                                        <Icon name={action.icon} />
-                                      ) : (
-                                        action.icon
+                    {enhancedActions &&
+                      enhancedActions.length > 0 &&
+                      hasVisibleActions(item) && (
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              {/* <DropdownMenuLabel>Actions</DropdownMenuLabel> */}
+                              {/* <DropdownMenuSeparator /> */}
+                              {enhancedActions.map((action, actionIndex) => {
+                                // Check if action should be shown
+                                const shouldShow =
+                                  action.show === undefined ||
+                                  (typeof action.show === "boolean"
+                                    ? action.show
+                                    : action.show(item));
+
+                                if (!shouldShow) {
+                                  return null;
+                                }
+
+                                return (
+                                  <div key={actionIndex}>
+                                    {action.separator && (
+                                      <DropdownMenuSeparator />
+                                    )}
+                                    <DropdownMenuItem
+                                      onClick={() => action.onClick(item)}
+                                      className={`py-2 text-sm ${
+                                        action.variant === "destructive"
+                                          ? "text-red-600"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {action.icon && (
+                                        <span className="mr-3 h-4 w-4 text-secondary-foreground/70">
+                                          {typeof action.icon === "string" ? (
+                                            <Icon name={action.icon} />
+                                          ) : (
+                                            action.icon
+                                          )}
+                                        </span>
                                       )}
-                                    </span>
-                                  )}
-                                  {action.label}
-                                </DropdownMenuItem>
-                              </div>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    )}
+                                      {action.label}
+                                    </DropdownMenuItem>
+                                  </div>
+                                );
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      )}
                   </tr>
                 );
               })}

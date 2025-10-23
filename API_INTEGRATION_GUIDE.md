@@ -19,7 +19,9 @@ interface PaginationData {
 
 ### Response Format
 
-Your backend should return:
+#### Default Format (IApiResponse)
+
+Your backend should return this format by default:
 
 ```typescript
 interface IApiResponse<T> {
@@ -28,6 +30,50 @@ interface IApiResponse<T> {
   Count: number; // Total number of items (for pagination)
   Message?: string; // Optional success/error message
 }
+```
+
+#### Custom Response Formats
+
+**NEW FEATURE**: You can now use any response format by configuring the `responseConfig` prop:
+
+```typescript
+// 1. REST API Format
+const restApiConfig = {
+  dataField: "data",
+  countField: "total",
+  successField: "success",
+  messageField: "message",
+  statusCodeField: "status",
+};
+
+// 2. Laravel API Resource Format
+const laravelConfig = {
+  dataField: "data",
+  countField: "meta.total",
+  successField: "success",
+  messageField: "message",
+  statusCodeField: "status",
+};
+
+// 3. Django REST Framework Format
+const djangoConfig = {
+  dataField: "results",
+  countField: "count",
+  successField: "success",
+  messageField: "message",
+  statusCodeField: "status",
+};
+
+// 4. Custom Transform Function
+const customConfig = {
+  transformResponse: (response) => ({
+    data: response.response.users,
+    count: response.response.pagination.total_records,
+    success: response.status.ok,
+    message: response.status.message,
+    statusCode: response.status.code,
+  }),
+};
 ```
 
 ## 🔍 Filter String Format
@@ -366,7 +412,7 @@ def apply_filter(query, filter_string):
 
 ## 🎯 Frontend Integration
 
-### Basic Setup
+### Basic Setup (Default Format)
 
 ```typescript
 import { NcTable, type NcTableProps } from "nc-table";
@@ -399,13 +445,87 @@ const handler: NcTableProps<Employee>["handler"] = async (params) => {
   return result;
 };
 
-// Use the table
+// Use the table with default IApiResponse format
 <NcTable<Employee>
   columns={columns}
   handler={handler}
   showAdvancedSearch={true}
   selectable={true}
-  // ... other props
+  // No responseConfig needed - uses default format
+/>;
+```
+
+### Custom Response Format Setup
+
+```typescript
+import { CommonResponseFormats } from "nc-table/utils/responseUtils";
+
+// For REST API format
+const restApiHandler: NcTableProps<Employee>["handler"] = async (params) => {
+  const response = await fetch("/api/employees", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  // Your backend returns: { success: true, data: [...], total: 100 }
+  return response.json();
+};
+
+// Use with REST API format
+<NcTable<Employee>
+  columns={columns}
+  handler={restApiHandler}
+  responseConfig={CommonResponseFormats.restApi}
+  showAdvancedSearch={true}
+/>;
+
+// For Laravel API Resource format
+const laravelHandler: NcTableProps<Employee>["handler"] = async (params) => {
+  const response = await fetch("/api/employees", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  // Your Laravel backend returns: { success: true, data: [...], meta: { total: 100 } }
+  return response.json();
+};
+
+// Use with Laravel format
+<NcTable<Employee>
+  columns={columns}
+  handler={laravelHandler}
+  responseConfig={CommonResponseFormats.laravel}
+  showAdvancedSearch={true}
+/>;
+
+// For completely custom format with transform function
+const customHandler: NcTableProps<Employee>["handler"] = async (params) => {
+  const response = await fetch("/api/employees", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  // Your backend returns any custom format
+  return response.json();
+};
+
+// Use with custom transform
+<NcTable<Employee>
+  columns={columns}
+  handler={customHandler}
+  responseConfig={{
+    transformResponse: (response) => ({
+      data: response.response.users,
+      count: response.response.pagination.total_records,
+      success: response.status.ok,
+      message: response.status.message,
+      statusCode: response.status.code,
+    }),
+  }}
+  showAdvancedSearch={true}
 />;
 ```
 
